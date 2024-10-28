@@ -1,0 +1,19 @@
+#!/bin/bash -l
+
+# Project name
+#$ -P cbs
+
+#Time limit
+#$ -l h_rt=24:00:00
+
+#Name a job
+#-N power_cat
+
+#join error and output stream
+#$ -j y
+
+#Send email when job ends or aborts
+#$-m e
+
+module load R/4.2.1
+Rscript power_ttest_categorical.R $1 $2 $3 $4 $5
