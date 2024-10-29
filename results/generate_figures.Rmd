@@ -1,0 +1,259 @@
+---
+title: ''
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(stringr)
+library(ggpubr)
+
+```
+
+
+##### **Plot: type 1 error t test**
+```{r type1 t test, echo=FALSE}
+#set wd to simulation results directory
+
+type1_ttest <- read.csv( "./results/type1_ttest_2024-10-28.csv")
+
+type1_ttest_continuous <- type1_ttest %>% dplyr::filter(rand.var=="continuous")
+
+#summarize type 1 error per case
+type1.new<-type1_ttest_continuous %>% dplyr::group_by(label) %>% dplyr::summarize(
+      prop1=sum(random.pval<0.05)/length(random.pval),
+      low1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      upper1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2],  prop2=sum(obs.pval<0.05)/length(random.pval),
+      low2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[1],
+      upper2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[2])
+
+
+cont_low <- type1.new %>% dplyr::filter(str_detect(label, "r=0.")==F | str_detect(label, "AA=0.5, BB=0.5"))
+
+cont_high <- type1.new %>% dplyr::filter(!(label %in% cont_low$label))
+
+cont_low$label <- factor(cont_low$label, levels = c( "AA=0.5, BB=0.5, r=0"  , "AA=0.75, BB=0.75, r=0", "AA=0.9, BB=0.9, r=0", "AA=0.5, BB=0.5, r=0.25",  "AA=0.5, BB=0.5, r=0.5",  "AA=0.5, BB=0.5, r=0.75" ,"AA=0.5, BB=0.5, r=0.9"  ) , labels = c( "r=0, Hgm=0"  , "r=0, Hgm=0.5", "r=0, Hgm=0.75", "r=0.25, Hgm=0",  "r=0.5, Hgm=0",  "r=0.75, Hgm=0" ,"r=0.9, Hgm=0"  ))
+
+cont_high$label <- factor(cont_high$label, levels = c("AA=0.75, BB=0.75, r=0.25" , "AA=0.9, BB=0.9, r=0.25","AA=0.75, BB=0.75, r=0.5", "AA=0.9, BB=0.9, r=0.5" , "AA=0.75, BB=0.75, r=0.75",      "AA=0.9, BB=0.9, r=0.75"  ,"AA=0.75, BB=0.75, r=0.9" , 
+"AA=0.9, BB=0.9, r=0.9" )) 
+
+
+
+
+type1_ttest_cat <- type1_ttest %>% dplyr::filter(rand.var=="categorical")
+
+type1.new2<-type1_ttest_cat %>% dplyr::group_by(label) %>% dplyr::summarize(
+      prop3=sum(random.pval<0.05)/length(random.pval),
+      low1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      upper1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2],  prop2=sum(obs.pval<0.05)/length(random.pval),
+      low2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[1],
+      upper2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[2])
+
+#summarize type 1 error per case
+cat_low <- type1.new2 %>% dplyr::filter(str_detect(label, "r=0.")==F | str_detect(label, "AA=0.5, BB=0.5"))
+
+cat_high <- type1.new2 %>% dplyr::filter(!(label %in% cat_low$label))
+
+cat_low$label <- factor(cat_low$label, levels = c( "AA=0.5, BB=0.5, r=0"  , "AA=0.75, BB=0.75, r=0", "AA=0.9, BB=0.9, r=0", "AA=0.5, BB=0.5, r=0.25",  "AA=0.5, BB=0.5, r=0.5",  "AA=0.5, BB=0.5, r=0.75" ,"AA=0.5, BB=0.5, r=0.9"  ), labels = c( "r=0, Hgm=0"  , "r=0, Hgm=0.5", "r=0, Hgm=0.75", "r=0.25, Hgm=0",  "r=0.5, Hgm=0",  "r=0.75, Hgm=0" ,"r=0.9, Hgm=0"  ))
+
+cat_high$label <- factor(cat_high$label, levels = c("AA=0.75, BB=0.75, r=0.25" , "AA=0.9, BB=0.9, r=0.25","AA=0.75, BB=0.75, r=0.5", "AA=0.9, BB=0.9, r=0.5" , "AA=0.75, BB=0.75, r=0.75","AA=0.9, BB=0.9, r=0.75" , "AA=0.75, BB=0.75, r=0.9"  ,
+"AA=0.9, BB=0.9, r=0.9"  ) )
+
+cat_high <- na.omit(cat_high)
+#make plots
+l <-ggplot(data = cont_low) + geom_point(aes(x=label, y= prop1, shape = "square"), size=4, stroke=.75, position=position_nudge(x=-.2))  + geom_errorbar(aes(x=label, y=prop1, ymin=low1, ymax=upper1), width=.2, position=position_nudge(x=-.2)) + geom_point(aes(x=label, y= prop2, shape = "circle"),size=4,stroke=.75) + geom_errorbar(aes(x=label, y=prop2, ymin=low2, ymax=upper2), width=.2) +geom_point(data=cat_low, aes(x=label, y= prop2, shape = "triangle"), size=4, stroke=.75, position=position_nudge(x=.2))+geom_errorbar(data=cat_low,aes(x=label, y=prop3, ymin=low1, ymax=upper1), width=.2, position=position_nudge(x=.2))  + geom_hline(yintercept = 0.05, linetype=2, color = "black") + ylim(0,.1) + theme(axis.text.x = element_text(angle=45, vjust=.5)) + theme_pubr()  + ggtitle("(a) No homophily on one or both variables") + scale_shape_manual( name = "",values = c(21, 22, 24), labels = c("circle"="t-test", "square"="SPRTCA randomize X2", "triangle"= "SPRTCA randomize X1"))  + theme_pubr() +  theme(axis.text.x = element_text(angle=45, vjust=.5))+ theme(text=element_text(size=16),plot.title = element_text(hjust = -0.2, vjust=2.12, size=20), legend.position = "bottom", legend.text = element_text(size=16))+ scale_x_discrete(labels = c(expression(paste(r[h]==0, ", ", H[GM]==0)), expression(paste(r[h]==0, ", ", H[GM]==.5)), expression(paste(r[h]==0, ", ", H[GM]==.75)), expression(paste(r[h]==.25, ", ", H[GM]==0)), expression(paste(r[h]==.5, ", ", H[GM]==0)), expression(paste(r[h]==.75, ", ", H[GM]==0)), expression(paste(r[h]==.9, ", ", H[GM]==0)) )) + ylab("Type 1 Error") + xlab("")
+
+h <-ggplot(data = cont_high) + geom_point(aes(x=label, y= prop1, shape = "square"), size=4, stroke=.75, position=position_nudge(x=-.2))  + geom_errorbar(aes(x=label, y=prop1, ymin=low1, ymax=upper1), width=.2, position=position_nudge(x=-.2)) + geom_point(aes(x=label, y= prop2, shape = "circle"),size=4,stroke=.75) + geom_errorbar(aes(x=label, y=prop2, ymin=low2, ymax=upper2), width=.2) +geom_point(data=cat_high, aes(x=label, y= prop3, shape = "triangle"), size=4, stroke=.75, position=position_nudge(x=.2))+geom_errorbar(data=cat_high,aes(x=label, y=prop3, ymin=low1, ymax=upper1), width=.2, position=position_nudge(x=.2))+ xlab("") + geom_hline(yintercept = 0.05, linetype=2, color = "black") + ylim(0,.75) + theme(axis.text.x = element_text(angle=45, vjust=.5)) + theme_pubr()  + ggtitle("     (b) Homophily on both variables") + scale_shape_manual( name = "",values = c(21, 22, 24))  + theme_pubr() +  theme(axis.text.x = element_text(angle=45, vjust=.5))+ theme(text=element_text(size=16),plot.title = element_text(hjust = -0.2, vjust=2.12, size=20), legend.position = "bottom") + scale_x_discrete(labels = c(expression(paste(r[h]==.25, ", ", H[GM]==.5)), expression(paste(r[h]==.25, ", ", H[GM]==.75)), expression(paste(r[h]==.5, ", ", H[GM]==.5)), expression(paste(r[h]==.5, ", ", H[GM]==.75)), expression(paste(r[h]==.75, ", ", H[GM]==.5)), expression(paste(r[h]==.75, ", ", H[GM]==.75)), expression(paste(r[h]==.9, ", ", H[GM]==.5)),expression(paste(r[h]==.9, ", ", H[GM]==.75))  )) + ylab("Type 1 Error")
+
+#combine
+type1_ttest <- ggarrange(l, h, common.legend = T, nrow=2)
+
+#export
+pdf("./results/type1_ttest.pdf", width=10, height=18)
+print(type1_ttest)
+dev.off() 
+
+#png("type_1_ttest.png", units="in", width=8, height=11, res=800)
+#type1_ttest
+#dev.off()
+
+```
+
+##### **Plot: type 1 error t test with numeric variable generated using Poisson**
+```{r type 1 ttest pois}
+#set wd to simulation results directory
+
+type1_ttest <- read.csv( "./results/type1_pois_2024-10-28.csv")
+
+#type1_ttest_continuous <- type1_ttest %>% dplyr::filter(rand.var=="continuous")
+
+#summarize type 1 error per case
+type1.new<-type1_ttest %>% dplyr::group_by(label) %>% dplyr::summarize(
+      prop1=sum(random.pval<0.05)/length(random.pval),
+      low1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      upper1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2],  prop2=sum(obs.pval<0.05)/length(random.pval),
+      low2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[1],
+      upper2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[2])
+
+
+cont_low <- type1.new %>% dplyr::filter(str_detect(label, "r=0.")==F | str_detect(label, "AA=0.5, BB=0.5"))
+
+cont_high <- type1.new %>% dplyr::filter(!(label %in% cont_low$label))
+
+cont_low$label <- factor(cont_low$label, levels = c( "AA=0.5, BB=0.5, r=0"  , "AA=0.75, BB=0.75, r=0", "AA=0.9, BB=0.9, r=0", "AA=0.5, BB=0.5, r=0.25",  "AA=0.5, BB=0.5, r=0.5",  "AA=0.5, BB=0.5, r=0.75" ,"AA=0.5, BB=0.5, r=0.9"  ) )
+
+cont_high$label <- factor(cont_high$label, levels = c("AA=0.75, BB=0.75, r=0.25" , "AA=0.9, BB=0.9, r=0.25","AA=0.75, BB=0.75, r=0.5", "AA=0.9, BB=0.9, r=0.5" , "AA=0.75, BB=0.75, r=0.75", "AA=0.9, BB=0.9, r=0.75", "AA=0.75, BB=0.75, r=0.9"   ,
+"AA=0.9, BB=0.9, r=0.9" )) 
+
+
+#make plots
+l <-ggplot(data = cont_low) + geom_point(aes(x=label, y= prop1, shape = "square"), size=4, stroke=.75, position=position_nudge(x=-.2))  + geom_errorbar(aes(x=label, y=prop1, ymin=low1, ymax=upper1), width=.2, position=position_nudge(x=-.2)) + geom_point(aes(x=label, y= prop2, shape = "circle"),size=4,stroke=.75) + geom_errorbar(aes(x=label, y=prop2, ymin=low2, ymax=upper2), width=.2)  + geom_hline(yintercept = 0.05, linetype=2, color = "black") + ylim(0,.1) + theme(axis.text.x = element_text(angle=45, vjust=.5)) + theme_pubr()  + ggtitle("(a) No homophily on one or both variables") + scale_shape_manual( name = "",values = c(21, 22, 24), labels = c("circle"="t-test", "square"="SPRTCA randomize X2", "triangle"= "SPRTCA randomize X1"))  + theme_pubr() +  theme(axis.text.x = element_text(angle=45, vjust=.5))+ theme(text=element_text(size=16),plot.title = element_text(hjust = -0.2, vjust=2.12, size=20), legend.position = "bottom", legend.text = element_text(size=16))+ scale_x_discrete(labels = c(expression(paste(r[h]==0, ", ", H[GM]==0)), expression(paste(r[h]==0, ", ", H[GM]==.5)), expression(paste(r[h]==0, ", ", H[GM]==.75)), expression(paste(r[h]==.25, ", ", H[GM]==0)), expression(paste(r[h]==.5, ", ", H[GM]==0)), expression(paste(r[h]==.75, ", ", H[GM]==0)), expression(paste(r[h]==.9, ", ", H[GM]==0)) )) + ylab("Type 1 Error") + xlab("")
+
+h <-ggplot(data = cont_high) + geom_point(aes(x=label, y= prop1, shape = "square"), size=4, stroke=.75, position=position_nudge(x=-.2))  + geom_errorbar(aes(x=label, y=prop1, ymin=low1, ymax=upper1), width=.2, position=position_nudge(x=-.2)) + geom_point(aes(x=label, y= prop2, shape = "circle"),size=4,stroke=.75) + geom_errorbar(aes(x=label, y=prop2, ymin=low2, ymax=upper2), width=.2) + xlab("") + geom_hline(yintercept = 0.05, linetype=2, color = "black") + ylim(0,.75) + theme(axis.text.x = element_text(angle=45, vjust=.5)) + theme_pubr()  + ggtitle("     (b) Homophily on both variables") + scale_shape_manual( name = "",values = c(21, 22, 24))  + theme_pubr() +  theme(axis.text.x = element_text(angle=45, vjust=.5))+ theme(text=element_text(size=16),plot.title = element_text(hjust = -0.2, vjust=2.12, size=20), legend.position = "bottom") + scale_x_discrete(labels = c(expression(paste(r[h]==.25, ", ", H[GM]==.5)), expression(paste(r[h]==.25, ", ", H[GM]==.75)), expression(paste(r[h]==.5, ", ", H[GM]==.5)), expression(paste(r[h]==.5, ", ", H[GM]==.75)), expression(paste(r[h]==.75, ", ", H[GM]==.5)), expression(paste(r[h]==.75, ", ", H[GM]==.75)), expression(paste(r[h]==.9, ", ", H[GM]==.5)),expression(paste(r[h]==.9, ", ", H[GM]==.75))  )) + ylab("Type 1 Error")
+
+#combine
+type1_ttest <- ggarrange(l, h, common.legend = T, nrow=2)
+
+#export
+png("./results/type1_pois.png",units="in", width=10, height=12, res =800)
+type1_ttest
+dev.off() 
+
+
+```
+
+##### **Plot: type 1 error Pearson correlation**
+```{r type 1 ttest pois}
+
+type1_pearson <- read.csv( "./results/type1_pearson_2024-10-25.csv")
+
+#summarize type 1 error per case
+type1_pearson_summary <- type1_pearson %>% dplyr::group_by(label) %>% dplyr::summarise(n = n(), pearson_randomize = sum(random.pval < 0.05)/n, pearson_randomize_low=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      pearson_randomize_up=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2], pearson = sum(obs.pval < 0.05)/n, pearson_low=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[1],
+      pearson_up=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[2])
+
+cont_low <- type1_pearson_summary %>% dplyr::filter(str_detect(label, "r1=0,")==T | str_detect(label, "r2=0.")==F)
+
+cont_high <- type1_pearson_summary %>% dplyr::filter(!(label %in% cont_low$label))
+
+
+cont_low$label <- factor(cont_low$label, levels = c("r1=0, r2=0", "r1=0, r2=0.25",  "r1=0, r2=0.5" , "r1=0, r2=0.75", "r1=0.25, r2=0", "r1=0.5, r2=0" ,"r1=0.75, r2=0"  ))
+
+
+cont_high$label <- factor(cont_high$label, levels = c("r1=0.25, r2=0.25", "r1=0.25, r2=0.5" , "r1=0.25, r2=0.75", "r1=0.5, r2=0.25",  "r1=0.5, r2=0.5"  , "r1=0.5, r2=0.75",  "r1=0.75, r2=0.25" ,"r1=0.75, r2=0.5",  "r1=0.75, r2=0.75" ) ) 
+
+
+
+#make plots
+l <- ggplot(data = cont_low) + geom_point(aes(x=label, y= pearson, shape = "circle"), size=4, stroke=.75, position=position_nudge(x=-.2))  + geom_errorbar(aes(x=label, y=pearson, ymin=pearson_low, ymax=pearson_up), width=.2, position=position_nudge(x=-.2)) + geom_point(aes(x=label, y= pearson_randomize, shape = "square"),size=4,stroke=.75) + geom_errorbar(aes(x=label, y=pearson_randomize, ymin=pearson_randomize_low, ymax=pearson_randomize_up), width=.2)   + geom_hline(yintercept = 0.05, linetype=2, color = "black") + ylim(0,.1) + theme(axis.text.x = element_text(angle=45, vjust=.5)) + theme_pubr()  + ggtitle("(a) No homophily on one or both variables") + scale_shape_manual( name = "",values = c(21, 22, 24), labels = c("circle"="Pearson correlation test", "square"="SPRTCA randomize X2", "triangle"= "SPRTCA randomize X1"))  + theme_pubr() +  theme(axis.text.x = element_text(angle=45, vjust=.5))+ theme(text=element_text(size=16),plot.title = element_text(hjust = -0.2, vjust=2.12, size=20), legend.position = "bottom", legend.text = element_text(size=16)) + scale_x_discrete(labels = c(expression(paste(r[h]==0, ", ", r[h]==0)), expression(paste(r[h]==0, ", ", r[h]==.25)), expression(paste(r[h]==0, ", ",  r[h]==.5)), expression(paste(r[h]==0, ", ",  r[h]==.75)), expression(paste(r[h]==.25, ", ",  r[h]==0)), expression(paste(r[h]==.5, ", ",  r[h]==.5)), expression(paste(r[h]==0, ", ",  r[h]==.75)) )) +ylab("Type 1 Error") + xlab("")
+
+
+
+h <- ggplot(data = cont_high) + geom_point(aes(x=label, y= pearson, shape = "circle"), size=4, stroke=.75, position=position_nudge(x=-.2))  + geom_errorbar(aes(x=label, y=pearson, ymin=pearson_low, ymax=pearson_up), width=.2, position=position_nudge(x=-.2)) + geom_point(aes(x=label, y= pearson_randomize, shape = "square"),size=4,stroke=.75) + geom_errorbar(aes(x=label, y=pearson_randomize, ymin=pearson_randomize_low, ymax=pearson_randomize_up), width=.2)  + ylab("Type 1 Error") + xlab("") + geom_hline(yintercept = 0.05, linetype=2, color = "black") + ylim(0,.5) + theme(axis.text.x = element_text(angle=50, vjust=.5)) + theme_pubr()  + ggtitle("     (b) Homophily on both variables") + scale_shape_manual( name = "",values = c(21, 22, 24))  + theme_pubr() +  theme(axis.text.x = element_text(angle=50, vjust=.5))+ theme(plot.title = element_text(hjust = -0.2, vjust=2.12, size=20), legend.position = "none",text=element_text(size=16))  + scale_x_discrete(labels = c(expression(paste(r[h]==.25, ", ", r[h]==.25)), expression(paste(r[h]==.25, ", ", r[h]==.5)), expression(paste(r[h]==.25, ", ",  r[h]==.75)), expression(paste(r[h]==.5, ", ",  r[h]==.25)), expression(paste(r[h]==.5, ", ",  r[h]==.5)), expression(paste(r[h]==.5, ", ",  r[h]==.75)), expression(paste(r[h]==.75, ", ",  r[h]==.25)) , expression(paste(r[h]==.75, ", ",  r[h]==.5)), expression(paste(r[h]==.75, ", ",  r[h]==.75))))
+#combine
+type1_pearson <- ggarrange(l, h, common.legend = T, nrow=2)
+
+
+#export
+pdf("./results/type1_pearson.pdf", width=10, height=18)
+type1_pearson
+dev.off() 
+
+ 
+```
+##### **Plot: power t test**
+```{r power ttest}
+power_ttest_continuous <- read.csv( "./results/power_cont_2024-10-28.csv")
+
+power_ttest_cat <- read.csv( "./results/power_cat_2024-10-27.csv")
+
+pwr_summary <- power_ttest_continuous%>% dplyr::group_by(ef, label) %>% dplyr::summarise(n = n(), pwr_randomize = sum(random.pval < 0.05)/n, pwr_ttest = sum(obs.pval < 0.05)/n,  low1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      upper1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2], low2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[1],
+      upper2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[2]) 
+
+
+pwr_summary$label <- factor(pwr_summary$label, levels = c( "AA=0.5, BB=0.5, r=0"  , "AA=0.5, BB=0.5, r=0.25", "AA=0.5, BB=0.5, r=0.5","AA=0.5, BB=0.5, r=0.75", "AA=0.5, BB=0.5, r=0.9", "AA=0.75, BB=0.75, r=0", "AA=0.75, BB=0.75, r=0.25", "AA=0.75, BB=0.75, r=0.5", "AA=0.75, BB=0.75, r=0.75", "AA=0.75, BB=0.75, r=0.9" , "AA=0.9, BB=0.9, r=0"  , "AA=0.9, BB=0.9, r=0.25", "AA=0.9, BB=0.9, r=0.5"  ,      "AA=0.9, BB=0.9, r=0.75"  ,
+                                                                   "AA=0.9, BB=0.9, r=0.9"    ),  labels = c("r[h]==0~H[GM]==0","r[h]==0.25~H[GM]==0" ,"r[h]==0.5~H[GM]==0","r[h]==0.75~H[GM]==0" , "r[h]==0.9~H[GM]==0" , "r[h]==0~H[GM]==0.5","r[h]==0.25~H[GM]==0.5" ,"r[h]==0.5~H[GM]==0.5","r[h]==0.75~H[GM]==0.5" , "r[h]==0.9~H[GM]==0.5", "r[h]==0~H[GM]==0.75","r[h]==0.25~H[GM]==0.75" ,"r[h]==0.5~H[GM]==0.75","r[h]==0.75~H[GM]==0.75" , "r[h]==0.9~H[GM]==0.75"))
+
+
+pwr_cat_summary <- power_ttest_cat%>% dplyr::group_by(ef, label) %>% dplyr::summarise(n = n(), pwr_randomize = sum(random.pval < 0.05)/n, pwr_ttest = sum(obs.pval < 0.05)/n, low2=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      upper2=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2]) 
+
+
+pwr_cat_summary$label <- factor(pwr_cat_summary$label, levels = c( "AA=0.5, BB=0.5, r=0"  , "AA=0.5, BB=0.5, r=0.25", "AA=0.5, BB=0.5, r=0.5","AA=0.5, BB=0.5, r=0.75", "AA=0.5, BB=0.5, r=0.9", "AA=0.75, BB=0.75, r=0", "AA=0.75, BB=0.75, r=0.25", "AA=0.75, BB=0.75, r=0.5", "AA=0.75, BB=0.75, r=0.75", "AA=0.75, BB=0.75, r=0.9" , "AA=0.9, BB=0.9, r=0"  , "AA=0.9, BB=0.9, r=0.25", "AA=0.9, BB=0.9, r=0.5"  ,      "AA=0.9, BB=0.9, r=0.75"  ,
+                                                           "AA=0.9, BB=0.9, r=0.9"    ),  labels = c("r[h]==0~H[GM]==0","r[h]==0.25~H[GM]==0" ,"r[h]==0.5~H[GM]==0","r[h]==0.75~H[GM]==0" , "r[h]==0.9~H[GM]==0" , "r[h]==0~H[GM]==0.5","r[h]==0.25~H[GM]==0.5" ,"r[h]==0.5~H[GM]==0.5","r[h]==0.75~H[GM]==0.5" , "r[h]==0.9~H[GM]==0.5", "r[h]==0~H[GM]==0.75","r[h]==0.25~H[GM]==0.75" ,"r[h]==0.5~H[GM]==0.75","r[h]==0.75~H[GM]==0.75" , "r[h]==0.9~H[GM]==0.75"))
+
+
+pwr_ttest <- ggplot(data = pwr_summary) + geom_point(aes(x=factor(ef), y= pwr_ttest ,shape = "circle", ), size=4,stroke=1, position=position_nudge(x=-.2))+ geom_errorbar(aes(x=factor(ef), y=pwr_ttest, ymin=low2, ymax=upper2), width=.25, position=position_nudge(x=-.2)) + geom_point(aes(x=factor(ef), y= pwr_randomize, shape = "square"), size=4,stroke=1, position=position_nudge(x=0))+ geom_errorbar(aes(x=factor(ef), y=pwr_randomize, ymin=low1, ymax=upper1), width=.25)+ geom_point(data=pwr_cat_summary,aes(x=factor(ef), y= pwr_randomize, shape = "triangle"), size=4,stroke=1, position=position_nudge(x=.2))+ geom_errorbar(data=pwr_cat_summary,aes(x=factor(ef), y=pwr_randomize, ymin=low2, ymax=upper2), width=.25, position=position_nudge(x=.2))+ facet_wrap(.~label, nrow=5, ncol=3, labeller = label_parsed)+theme_pubr() + ylab("Power")  + ylim(0,1) + theme(axis.text.x = element_text( vjust=.5)) + xlab("Effect Size")  + theme(axis.text = element_text(size=12), axis.title.x = element_text(size=22), axis.title.y = element_text(size=22), legend.text = element_text(size=18),strip.text = element_text(
+  size = 18, color = "black"))  + scale_shape_manual( name = "",labels=c("circle"="t-test", "square"="SPRTCA randomize X2", "triangle"="SPRTCA randomize X1"), values = c(21, 22, 24)) 
+
+
+
+pdf("./results/power_ttest.pdf", width=14, height=18)
+pwr_ttest
+dev.off() 
+```
+
+
+##### **Plot: power t test t test with numeric variable generated using Poisson**
+```{r power ttest pois}
+
+power_ttest_continuous_pois <- read.csv( "./results/power_pois_2024-10-28.csv")
+
+pwr_summary <- power_ttest_continuous_pois %>% dplyr::group_by(ef, label) %>% dplyr::summarise(n = n(), pwr_randomize = sum(random.pval < 0.05)/n, pwr_ttest = sum(obs.pval < 0.05)/n,  low1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      upper1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2], low2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[1],
+      upper2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[2]) 
+
+pwr_summary$label <- factor(pwr_summary$label, levels = c( "AA=0.5, BB=0.5, r=0"  , "AA=0.5, BB=0.5, r=0.25", "AA=0.5, BB=0.5, r=0.5","AA=0.5, BB=0.5, r=0.75", "AA=0.5, BB=0.5, r=0.9", "AA=0.75, BB=0.75, r=0", "AA=0.75, BB=0.75, r=0.25", "AA=0.75, BB=0.75, r=0.5", "AA=0.75, BB=0.75, r=0.75", "AA=0.75, BB=0.75, r=0.9" , "AA=0.9, BB=0.9, r=0"  , "AA=0.9, BB=0.9, r=0.25", "AA=0.9, BB=0.9, r=0.5"  ,      "AA=0.9, BB=0.9, r=0.75"  ,
+                                                                   "AA=0.9, BB=0.9, r=0.9"    ),  labels = c("r[h]==0~H[GM]==0","r[h]==0.25~H[GM]==0" ,"r[h]==0.5~H[GM]==0","r[h]==0.75~H[GM]==0" , "r[h]==0.9~H[GM]==0" , "r[h]==0~H[GM]==0.5","r[h]==0.25~H[GM]==0.5" ,"r[h]==0.5~H[GM]==0.5","r[h]==0.75~H[GM]==0.5" , "r[h]==0.9~H[GM]==0.5", "r[h]==0~H[GM]==0.75","r[h]==0.25~H[GM]==0.75" ,"r[h]==0.5~H[GM]==0.75","r[h]==0.75~H[GM]==0.75" , "r[h]==0.9~H[GM]==0.75"))
+
+
+ pwr_ttest <- ggplot(data = pwr_summary) + geom_point(aes(x=factor(ef), y= pwr_ttest ,shape = "circle", ), size=4,stroke=1, position=position_nudge(x=-.2))+ geom_errorbar(aes(x=factor(ef), y=pwr_ttest, ymin=low2, ymax=upper2), width=.25, position=position_nudge(x=-.2)) + geom_point(aes(x=factor(ef), y= pwr_randomize, shape = "square"), size=4,stroke=1, position=position_nudge(x=0))+ geom_errorbar(aes(x=factor(ef), y=pwr_randomize, ymin=low1, ymax=upper1), width=.25)+ facet_wrap(.~label, nrow=5, ncol=3, labeller = label_parsed)+theme_pubr() + ylab("Power")  + ylim(0,1) + theme(axis.text.x = element_text( vjust=.5)) + xlab("Effect Size")  + theme(axis.text = element_text(size=12), axis.title.x = element_text(size=22), axis.title.y = element_text(size=22), legend.text = element_text(size=18),strip.text = element_text(
+  size = 18, color = "black"))  + scale_shape_manual( name = "",labels=c("circle"="t-test", "square"="SPRTCA randomize X2", "triangle"="SPRTCA randomize X1"), values = c(21, 22, 24)) 
+
+ 
+pdf("./results/power_ttest_poisson.pdf", width=14, height=18)
+pwr_ttest
+dev.off() 
+
+
+png("./results/power_pois.png",units="in", width=10, height=12, res =800)
+pwr_ttest
+dev.off() 
+```
+
+
+##### **Plot: power Pearson**
+```{r power pearson}
+power_pearson <-  read.csv( "./results/power_pearson_2024-10-27.csv")
+
+
+pwr_summary <- power_pearson %>% dplyr::group_by(ef, label) %>% dplyr::summarise(n = n(), pwr_randomize = sum(random.pval < 0.05)/n, pwr_ttest = sum(obs.pval < 0.05)/n, low1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[1],
+      upper1=prop.test(sum(random.pval<0.05),length(random.pval))$conf.int[2], low2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[1],
+      upper2=prop.test(sum(obs.pval<0.05),length(random.pval))$conf.int[2]) 
+
+pwr_summary$label <- factor(pwr_summary$label, levels = c("r1=0, r2=0", "r1=0, r2=0.25",  "r1=0, r2=0.5" , "r1=0, r2=0.75", "r1=0.25, r2=0", "r1=0.25, r2=0.25", "r1=0.25, r2=0.5" , "r1=0.25, r2=0.75", "r1=0.5, r2=0" , "r1=0.5, r2=0.25",  "r1=0.5, r2=0.5"  , "r1=0.5, r2=0.75", "r1=0.75, r2=0",
+ "r1=0.75, r2=0.25" ,"r1=0.75, r2=0.5",  "r1=0.75, r2=0.75"), labels = c("r[h](1)==0~r[h](2)==0", "r[h](1)==0~r[h](2)==0.25", "r[h](1)==0~r[h](2)==0.5", "r[h](1)==0~r[h](2)==0.75", "r[h](1)==0.25~r[h](2)==0", 
+      "r[h](1)==0.25~r[h](2)==0.25", "r[h](1)==0.25~r[h](2)==0.5", "r[h](1)==0.25~r[h](2)==0.75",  "r[h](1)==0.5~r[h](2)==0", "r[h](1)==0.5~r[h](2)==0.25", "r[h](1)==0.5~r[h](2)==0.5", "r[h](1)==0.5~r[h](2)==0.75", "r[h](1)==0.75~r[h](2)==0",  "r[h](1)==0.75~r[h](2)==0.25", "r[h](1)==0.75~r[h](2)==0.5", "r[h](1)==0.75~r[h](2)==0.75") ) 
+
+
+pwr_pearson <-  ggplot(data = pwr_summary) + geom_point(aes(x=factor(ef), y= pwr_ttest ,shape = "circle"), size=4,stroke=1, position=position_nudge(x=-.3))+ geom_errorbar(aes(x=factor(ef), y=pwr_ttest, ymin=low2, ymax=upper2), width=.4, position=position_nudge(x=-.3))+ geom_point(aes(x=factor(ef), y= pwr_randomize, shape = "square"), size=4,stroke=1)+   geom_errorbar(aes(x=factor(ef), y=pwr_randomize, ymin=low1, ymax=upper1), width=.4)+facet_wrap(.~label, nrow=4, ncol=4, labeller = label_parsed)+theme_pubr() + ylab("Power")  + ylim(0,1) + theme(axis.text.x = element_text( vjust=.5)) + xlab("Effect Size")+ theme(legend.position ="top",strip.text = element_text(
+  size = 18, color = "black"),legend.text=element_text(size=18), panel.border = element_rect(color = "black", fill = NA, size = .5),axis.text = element_text(size=16), axis.title.x = element_text(size=22), axis.title.y = element_text(size=22))  + scale_shape_manual( name = "",values = c(21, 22, 24), labels = c("circle"="Pearson correlation test", "square"="SPRTCA randomize X2")) 
+
+
+
+pdf("./results/power_pearson.pdf", width=14, height=18)
+pwr_pearson
+dev.off() 
+
+
+
+
+```
+
+
+
+
