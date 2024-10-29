@@ -123,7 +123,7 @@ generate.data.norm <- function(number.of.seeds, sample.size, AA, BB, r, ef){
   
   #shift mean by EF
   #order.table$num1[order.table$char1=="A"] <- order.table$num1+ef
-  order.table$num1 <- ifelse(order.table$char1=="A", order.table$num1 + ef, order.table$num1)
+  #order.table$num1 <- ifelse(order.table$char1=="A", order.table$num1 + ef, order.table$num1)
   ######PRODUCE RDS DATA FRAME#####
   dat <-as.rds.data.frame(df=order.table,id="id",
                           recruiter.id="rec.id",

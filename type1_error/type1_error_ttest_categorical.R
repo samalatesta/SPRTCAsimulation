@@ -81,7 +81,7 @@ generate.data.norm <- function(number.of.seeds, sample.size, AA, BB, r, ef){
   #AA and BB are same group probabilities
   myprob.char1 <- matrix(c(AA, 1-AA, 1-BB, BB),nrow=2)
   order.table$char1 <- rep(NA,sample.size)
-  i=2
+
   for(i in 1:sample.size){
     #generate randomized values in first order markov process 
     if(order.table$rec.id[i] == 0){order.table$char1[i] <- sample(1:2,1)}
@@ -111,7 +111,7 @@ generate.data.norm <- function(number.of.seeds, sample.size, AA, BB, r, ef){
   }
   
   #shift mean by EF
-  order.table$num1 <- order.table$num1+ef
+  order.table$num1 <- order.table$num1
   ######PRODUCE RDS DATA FRAME#####
   dat <-as.rds.data.frame(df=order.table,id="id",
                           recruiter.id="rec.id",
